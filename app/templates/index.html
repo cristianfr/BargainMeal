@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+{% set active_page = "index" %}
+{%block title %} BargainMeal! {% endblock %}
+{% block content %}
+<div class="rounded_box">
+<h1 class="fancy_header">Restaurant Deals Made Easy </h1>
+<span class="normal">
+<p> Just type the location to find top dishes in restaurants offering deals!</p>
+</span>
+<form class="form" form name="input" action="{{ url_for('query') }}" method="post">
+	<input type="text" class="input-block-level" placeholder="Ex : 94103" name = "location" align="center"><button type="submit" formaction="{{url_for('query')}}" formmethod="post">Get a Bargain!</button>
+</form> 
+	<br>
+	</div>
+{% endblock %}

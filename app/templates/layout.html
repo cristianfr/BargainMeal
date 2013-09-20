@@ -1,0 +1,100 @@
+{% set navigation_bar = [
+    ('/', 'index', 'Home'),
+    ('/code', 'code', 'Code'),
+    ('/about', 'about', 'About')
+] -%}
+{% set active_page = active_page|default('index') -%}
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Bargain Meal Finder">
+    <meta name="author" content="Cristian Figueroa">
+    
+
+    {% if title %}
+    <title>{% block title %}{% endblock %}</title>
+    {% else %}
+    <title>Bargain Meal !</title>
+    {% endif %}
+
+    <!-- Bootstrap core CSS -->
+    <link href="static/css/bootstrap.css" rel="stylesheet">
+    <link href="static/css/test.css" rel="stylesheet">
+
+
+    <!-- Custom styles for this template -->
+    <link href='http://fonts.googleapis.com/css?family=Fruktur' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Kavoon' rel='stylesheet' type='text/css'>
+    <link href='http://fonts.googleapis.com/css?family=Gudea' rel='stylesheet' type='text/css'>
+    <style>
+  .fancy_text {
+    font-family: 'Kavoon', cursive;
+    font-size: 27px;
+    color: #eee;
+    text-shadow: 0 0 0.2em #87F, 0 0 0.2em #87F,
+        0 0 0.2em #87F;
+  }
+  .fancy_header {
+    font-family: 'Fruktur', cursive;
+    font-size: 30px;
+    color: #FF7F00;
+    text-shadow: 0 0 0.2em #000, 0 0 0.2em #eee,
+        0 0 0.2em #000;
+  }
+  .normal {
+    font-family: 'Gudea', sans-serif;
+    font-size: 14px;
+    font-weight:400;
+    color: #fff;
+  }
+	body {
+	    padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+    
+	}
+
+    </style>
+
+  </head>
+  <body>
+    <div id="wrapper">
+    <div id="header">
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="/"><span class="fancy_text">Bargain Meal ! </span></a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+		    {% for href, id, caption in navigation_bar %}
+		    <li{% if id == active_page %} class="active"{% endif %}><a href="{{ href|e }}">{{ caption|e }}</a></li> 
+		    {% endfor %}
+		  </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    
+      {% block content %}{% endblock %}
+
+  </div><!-- /.container -->
+      <div id = "footer">
+      <footer>
+        <p>&copy; Cristian Figueroa, Insight Data Science 2013
+      </footer>
+      </div>
+  </div>
+        <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="static/js/jquery-1.10.2.min.js"></script>
+    <script src="static/js/bootstrap.min.js"></script>
+  </body>
+</html>
