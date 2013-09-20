@@ -1,8 +1,9 @@
 from tools.API_extract import foursquare as fs
 from tools.API_extract import groupon as gp
 from tools.utils.text import markerFormat
-from tools.utils import db_tools as db
+from tools.db import geocodes as gc
 from tools.API_extract import yelp
+from tools.db import common as db
 from flask import *
 import sys
 import os
@@ -24,7 +25,7 @@ def offline():
 	#Query database for info.
 	with con:
 		cur = con.cursor()
-		latlng = db.getGeocode(location,cur)
+		latlng = gc.getGeocode(location,cur)
 		markers = db.queryMarkers(cur)
 	#Query foursquare for info to create markers
 	(lat,lng) = latlng.split(",")
