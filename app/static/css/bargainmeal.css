@@ -32,11 +32,14 @@ body{
       padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
     
   }
-.slides {
+.slides, .about_me{
   margin: 0 auto;
   display:block;
   width:60%;
   height:100%;
+}
+.about_me {
+  width:100%;
 }
 .rounded_box{
   -webkit-border-radius: 5px;

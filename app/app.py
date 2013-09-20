@@ -43,6 +43,10 @@ def query():
 @app.route("/about")
 def about():
 	return render_template("about.html")
+	
+@app.route("/slides")
+def slides():
+	return render_template("slides.html")
 
 @app.route("/code")
 def code():
@@ -59,7 +63,11 @@ def createMarkers(coupons, latlng):
 	#Query foursquare for info to create markers
 	for coupon in coupons:
 		(ids, name, title, value, discount, url,site) = coupon
-		((foursquare_id, foursquare_name, lat, lng, phone),score) = fs.venue_match((latlng,name))
+		try:
+			((foursquare_id, foursquare_name, lat, lng, phone),score) = fs.venue_match((latlng,name))
+		except ValueError:
+			print "Foursquare connection error."
+			continue
 		if score == 0:
 			continue
 		(tasty_items, revs ) = fs.getTastyM( foursquare_id )
