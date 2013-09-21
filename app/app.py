@@ -43,7 +43,7 @@ def query():
 	
 @app.route("/about")
 def about():
-	return render_template("about.html")
+	return redirect("http://www.mit.edu/~cfiguero")
 	
 @app.route("/slides")
 def slides():
