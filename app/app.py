@@ -84,5 +84,9 @@ def createMarkers(coupons, latlng):
 		markers.append( (lat,lng ,m_label, m_revs , ids, url,(rating-1)/4) ) 
 	return markers
 
+
 if __name__ == "__main__":
-    app.run(port=8888)
+	if (len(sys.argv) >1 ):
+		app.run(port=8888)
+	else:
+		app.run(host="0.0.0.0",port=80)
