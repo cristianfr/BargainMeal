@@ -8,6 +8,13 @@ body{
 	height:100%;
 	width:100%;
 }
+#theButton{
+  height:40px;
+  
+}
+.searchForm{
+  text-align:center;
+}
   .fancy_text {
     font-family: 'Kavoon', cursive;
     font-size: 27px;
@@ -21,10 +28,11 @@ body{
     color: #FF7F00;
     text-shadow: 0 0 0.2em #000, 0 0 0.2em #eee,
         0 0 0.2em #000;
+    text-align:center;
   }
   .normal {
     font-family: 'Gudea', sans-serif;
-    font-size: 14px;
+    font-size: 16px;
     font-weight:400;
     color: #fff;
   }
@@ -45,7 +53,7 @@ body{
   -webkit-border-radius: 5px;
   -moz-border-radius: 5px;
   border-radius: 5px;
-  width:365px;
+  width:450px;
   padding:20px;
   margin: 0 auto;
   background-color:rgba(0,0,0,0.9);
@@ -67,8 +75,11 @@ html{
 	color:#eee;
 }
 .input-block-level{
-	width:50%;
+	width:88%;
 	margin:0 auto;
+  line-height:2em;
+  font-family: 'Gudea', sans-serif;
+  font-size: 17px;
 }
 .labels, .labels_rev {
   -webkit-border-radius: 5px;

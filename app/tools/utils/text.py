@@ -3,6 +3,10 @@ from words import *
 import operator
 import nltk
 
+'''
+Text operations commonly used.
+'''
+
 def formatting(phrase):
 	#Encoding tags from beautifulsoup into utf-8 text.
 	return phrase.text.encode('utf-8')
@@ -21,6 +25,7 @@ def word_filter(word):
 		return aux
 
 def markerFormat(name,value,discount, tasty_items,revs):
+	#Turn the marker information in to html labels.
 	marker_head = "<big>"+name+"</big>"+"<br> <span class='deal'>Get a $"+str(value)+' value for $'+str(discount)+' </span>'
 	m_label = marker_head +" <br><table class='menu_table'>"
 	for items in tasty_items:
@@ -37,10 +42,12 @@ def markerFormat(name,value,discount, tasty_items,revs):
 	return (m_label, m_revs)
 	
 def similarity(bag_1,bag_2):
+	#Cardinality of the intersection of two lists.
 	AinterB = len(bag_1)-len([word for word in bag_1 if word not in bag_2])
 	return AinterB
 
 def find_max_similarity(word_bag,results):
+	#Find the item that has more element in common with the word_bag.
 	score = []
 	if len(results) < 1:
 		return (("","","","",""),0)
@@ -55,6 +62,7 @@ def find_max_similarity(word_bag,results):
 	return max(score, key= operator.itemgetter(1))
 
 def main():
+	#Test
 	example1= 'args!'
 	example2= {"text":"Ponzi's"}
 	print 'word_filter :  '+example1+' '+word_filter(example1)
