@@ -69,8 +69,8 @@ def venue_match(info):
 
 def getTastyM(local_id):
 	with open('tools/text_classifiers/mbclassif.pickle','r') as infile:
-		classif = pickle.load(infile)
-	(name, rating, status,reviews,menu) = local_info(local_id)
+		classif = pickle.load( infile )
+	(name, rating, status, reviews, menu) = local_info(local_id)
 	classified_rev = [ ( review , classif.classify( featx( review ) ) ) for review in reviews]
 	pos_reviews = [ review.replace('"','\\"') for (review,score) in classified_rev if score=='pos']
 	m_items = process_menu(menu)
@@ -147,9 +147,8 @@ def process_menu(menu):
 					desc = item['description'].encode('utf-8')
 					price = item['price'].encode('utf-8')
 				except KeyError:
-					name = "Unnamed"
-					desc = "Decoding error"
-					price = 0
+					print "KeyError: "+item
+					continue
 				all_items.append( (name,desc,price) )						
 		return all_items
 	except KeyError:

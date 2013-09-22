@@ -2,6 +2,16 @@ from ..API_extract import foursquare as fs
 
 '''
 Foursquare related tables. Tasty dishes, local info, etc.
+TastyDishes originally was created for storing the best dishes
+of each restaurant. However, later on with the objective of improving
+accuracy a new table was created to contain the whole menu.
+
+-- To do --
+Given the update one can add the itemId to the fs_foods.
+Add a key for review. ReviewId
+
+-- Ultimate to do -- 
+Get the keys from a hash function.
 '''
 
 def create_foursquare(cur):
@@ -25,6 +35,32 @@ def create_foursquare(cur):
 	cur.execute("CREATE TABLE fs_foods( \
 			id_foursquare VARCHAR(255) CHARACTER SET utf8, \
 			tasty VARCHAR(255) CHARACTER SET utf8)")
+
+def create_menus(cur):
+	cur.execute('DROP TABLE IF EXISTS menus')
+	cur.execute('CREATE TABLE menus( \
+			itemId INT , \
+			restaurantId VARCHAR(255) CHARACTER SET utf8, \
+			itemName VARCHAR(255) CHARACTER SET utf8, \
+			itemPrice FLOAT, \
+			itemDesc TEXT, \
+			PRIMARY KEY(itemId) )')
+
+def populateMenus(cur):
+	cur.execute('SELECT id_foursquare FROM foursquare')
+	RestaurantIds = cur.fetchall()
+	toPopulate = []
+	for r_id in RestaurantIds:
+		(name, rating, status, reviews, menu) = fs.local_info( r_id )
+		m_items = fs.process_menu( menu )
+		for item in m_items:
+			itemKey = hash(item)%2147483647 #mysql INT limit
+			(iName, iDesc, iPrice) = item
+			toPopulate.append( [( itemKey, r_id , iName, iPrice, iDesc)])
+	
+	cur.executemany('INSERT INTO menus\
+		(itemId, retaurantId, itemName, itemPrice, itemDesc) \
+		VALUES (%s,%s,%s,%s,%s)',toPopulate)
 
 def populate_foursquare(cur):
 	cur.execute("SELECT coupons.id,name,title,value,discount,url,lat,lng,phone,yelp_r \
