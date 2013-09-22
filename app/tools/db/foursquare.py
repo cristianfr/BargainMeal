@@ -25,8 +25,8 @@ def create_foursquare(cur):
 			lng FLOAT,\
 			rating INT, \
 			PRIMARY KEY(id_foursquare))")
-	cur.execute('DROP TABLE IF EXISTS fs_reviews')
-	cur.execute("CREATE TABLE fs_reviews( \
+	cur.execute('DROP TABLE IF EXISTS reviews')
+	cur.execute("CREATE TABLE reviews( \
 			id_foursquare VARCHAR(255) CHARACTER SET utf8, \
 			review TEXT CHARACTER SET utf8,\
 			tasty VARCHAR(255) CHARACTER SET utf8\
@@ -90,5 +90,4 @@ def populate_foursquare(cur):
 		VALUES (%s,%s,%s)", reviews )
 	cur.executemany( "INSERT INTO foursquare(id_coupon, id_foursquare, name_foursquare, lat, lng, rating)\
 															 VALUES (%s,%s,%s,%s,%s,%s)",places)
-
 

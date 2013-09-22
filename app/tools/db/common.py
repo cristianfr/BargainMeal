@@ -1,5 +1,6 @@
 from ..utils.text import markerFormat
 import MySQLdb as db
+import foursquare as fs
 
 '''
 Common methods. Connect to databases, create the database if necessary, 
@@ -48,3 +49,10 @@ def queryMarkers(cur):
 		( m_label, m_revs ) = markerFormat( name, value, discount, tasty_items, revs)
 		markers.append( ( lat, lng , m_label, m_revs, ids, url, rating[0]*1.0/5 ) ) 
 	return markers
+
+def main():
+	con = connect_db()
+	cur = con.cursor()
+
+if __name__=='__main__':
+	main()
