@@ -1,6 +1,8 @@
 from ..utils.text import markerFormat
-import MySQLdb as db
 import foursquare as fs
+import coupons as cp
+import MySQLdb as db
+
 
 '''
 Common methods. Connect to databases, create the database if necessary, 
@@ -26,21 +28,21 @@ def db_setup():
 def queryMarkers(cur):
 	# Fetch the coupon/retaurant data cached in the database.
 	markers = []
-	cur.execute( "SELECT name, value, discount, url, id_foursquare, lat, lng, id \
-		FROM coupons JOIN foursquare ON coupons.id = foursquare.id_coupon" )
+	cur.execute( "SELECT name, value, discount, url, restaurantId, lat, lng, id \
+		FROM Coupons JOIN Restaurants ON Coupons.id = Restaurants.idCoupon" )
 	coupons = cur.fetchall()
 	
 	for coupon in coupons:
 		( name, value, discount, url, id_foursquare, lat, lng, ids) = coupon
-		cur.execute( "SELECT tasty, count(tasty) FROM fs_foods WHERE id_foursquare = %s \
-		 GROUP BY tasty ORDER BY 2 DESC", ( id_foursquare, ) )
+		cur.execute( "SELECT mItem, count(mItem) FROM Tasties WHERE restaurantId = %s \
+		 GROUP BY mItem ORDER BY 2 DESC", ( id_foursquare, ) )
 		tasty_items = cur.fetchall()
 		
 		if tasty_items == ():
 			continue
 		if tasty_items[0][0].strip() == '':
 			continue
-		cur.execute( "SELECT review, tasty FROM fs_reviews WHERE id_foursquare = %s", ( id_foursquare,) )
+		cur.execute( "SELECT review, mItem FROM Reviews WHERE restaurantId = %s", ( id_foursquare,) )
 		revs = cur.fetchall()
 		
 		cur.execute( "SELECT yelp_r FROM additional WHERE id = %s", ( ids, ) )
@@ -53,6 +55,19 @@ def queryMarkers(cur):
 def main():
 	con = connect_db()
 	cur = con.cursor()
+	print 'Connected to the database .-.-.--.-.-.-.-.-.-.-.-.-.'
+	#cp.create_coupons(cur)
+	#cp.populate_coupons(cur)
+	#print 'Populated Coupons .-.-.--.-.-.-.-.-.-.-.-.-.'
+	#cp.create_additional(cur)
+	#cp.populate_additional(cur,'livingsocial')
+	#print 'Populated Additional .-.-.--.-.-.-.-.-.-.-.-.-.'
+	fs.create_foursquare(cur)
+	fs.populate_foursquare(cur)
+	print 'Populated Restaurants ..-.-.-....-..-.--.-.-.-.-.'
+	print 'Commiting changes .-.-.-.-.--.-.-.-.-.-.-.'
+	con.commit()
+
 
 if __name__=='__main__':
 	main()

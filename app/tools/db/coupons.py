@@ -1,5 +1,6 @@
 from ..scrappers import livingsocial as ls
 from ..scrappers import groupon as gp
+from util import hasher
 from random import randint
 from time import sleep
 
@@ -11,8 +12,8 @@ with data extrated from scrapping websites.
 
 def create_coupons(cur):
 	#Create coupon tables.
-	cur.execute('DROP TABLE IF EXISTS coupons')
-	cur.execute("CREATE TABLE coupons( \
+	cur.execute('DROP TABLE IF EXISTS Coupons')
+	cur.execute("CREATE TABLE Coupons( \
 			id INT, \
 			name VARCHAR(255) CHARACTER SET utf8, \
 			title VARCHAR(255) CHARACTER SET utf8,\
@@ -37,65 +38,58 @@ def populate_coupons(cur):
 	links = cur.fetchall()
 	
 	for link in links:
-		sleep(randint(0,2))
+		sleep(randint(1,5))
 		ls_coupons.extend( ls.dealExtractorURL( link[1]+'/food-deals' ) )
 	unique_ls = list(set(ls_coupons))
 	
 	gp_coupons = gp.dealExtractor( open(gp.LOCAL, 'r'))
 	coupons = unique_ls + gp_coupons
-	id_key = 0
 	sql_coupon = []
 	for coupon in coupons:
-		id_key += 1
-		sql_coupon.append( (str(id_key),) + coupon )
-	cur.executemany("INSERT INTO coupons (id, name, title, value, discount, url, site) \
+		sql_coupon.append( (hasher(coupon),) + coupon )
+	cur.executemany("INSERT INTO Coupons (id, name, title, value, discount, url, site) \
 											VALUES (%s,%s,%s,%s,%s,%s,%s)",sql_coupon)
 
 def create_additional(cur):
 	#Create table with complementary data for foursquare table.
-	cur.execute('DROP TABLE IF EXISTS additional')
-	cur.execute("CREATE TABLE additional( \
+	cur.execute('DROP TABLE IF EXISTS Additional')
+	cur.execute("CREATE TABLE Additional( \
 			id INT, \
 			lat VARCHAR(20) CHARACTER SET utf8,\
 			lng VARCHAR(20) CHARACTER SET utf8,\
 			phone VARCHAR(10) CHARACTER SET utf8,\
 			yelp_r FLOAT)")
 
-def populate_additional(cur):
+def populate_additional(cur, site):
 	#Populate the additional table with scrapped data from coupons.
-	cur.execute("SELECT id, url FROM coupons WHERE site='groupon'")
+	#Accepted site values in {'groupon' , 'livingsocial'}.
+	cur.execute("SELECT id, url FROM Coupons WHERE site=%s",site)
 	links = cur.fetchall()
-	
-	additional_gp = []
+	additional = []
+	errors = ""
 	for link in links:
-		sleep(randint(0,2))
+		sleep(randint(1,5))
 		(ids,url) = link
-		print ids
 		try:
-			(lat,lng,phone,rating) = gp.dealStrip(url)
+			if (site=='groupon'):
+				(lat,lng,phone,rating) = gp.dealStrip(url)
+			else:
+				(lat,lng,phone,rating) = ls.dealStrip(url)
 		except AttributeError:
-			print 'Skipping'
+			errors+= str(ids)+', Error with ,'+url+'\n'
 			continue
-		additional_gp.append( (ids,lat,lng,phone,rating))
-		if len(additional_gp)>20:
+		additional.append( (ids,lat,lng,phone,rating))
+		if len(additional)>20:
 			#Prevent overloading database, or losing data due to ip blocking.
 			print 'Saving............................'		
-			cur.executemany("INSERT INTO additional(id,lat,lng,phone,yelp_r) \
-				VALUES (%s,%s,%s,%s,%s)",additional_gp)
-			additional_gp = []
+			cur.executemany("INSERT INTO Additional(id,lat,lng,phone,yelp_r) \
+				VALUES (%s,%s,%s,%s,%s)",additional)
+			additional = []
 	print 'Saving ...'
-	cur.executemany("INSERT INTO additional(id,lat,lng,phone,yelp_r) \
-		VALUES (%s,%s,%s,%s,%s)",additional_gp)
-	cur.execute("SELECT id, url FROM coupons WHERE site='livingsocial'")
-	links = cur.fetchall()
-	additional_ls = []
-	for link in links:
-		sleep(randint(0,2))
-		(ids,url) = link
-		(lat,lng,phone,rating) = ls.dealStrip(url)
-		additional_ls.append( (ids,lat,lng,phone,rating))
-	cur.executemany("INSERT INTO additional(id,lat,lng,phone,yelp_r) \
-		VALUES (%s,%s,%s,%s,%s)",additional_ls)
+	cur.executemany("INSERT INTO Additional(id,lat,lng,phone,yelp_r) \
+		VALUES (%s,%s,%s,%s,%s)",additional)
+	with open('populate_additional.log','w') as outfile:
+		outfile.write(errors)
 
 def populate_links(cur):
 	#Populate links by scrapping livingsocial index.
@@ -106,7 +100,7 @@ def populate_links(cur):
 
 def getCoupons(cur):
 	#Retrieve all coupons.
-	cur.execute("SELECT * FROM coupons")
+	cur.execute("SELECT * FROM Coupons")
 	return cur.fetchall()
 
 def get_random_link(cur):
@@ -117,7 +111,7 @@ def get_random_link(cur):
 
 def get_random_coupon(cur):
 	#For testing purposes. I know it's a slow implementation.
-	cur.execute("SELECT * FROM coupons ORDER BY RAND() LIMIT 1")
+	cur.execute("SELECT * FROM Coupons ORDER BY RAND() LIMIT 1")
 	(ids, name,title,value,discount,url,site) =  cur.fetchone()
 	return name + ' '+ title
 

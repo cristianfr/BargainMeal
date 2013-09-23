@@ -3,19 +3,23 @@ import nltk
 import pickle
 import requests
 import operator
+from pprint import pprint
 from ..text_classifiers.multinomialBayes import featx
 from ..utils.text import eliminate_stop_words,find_max_similarity,similarity
 
 URL = 'https://api.foursquare.com/v2/'
-CLIENT_ID = 'CB2ROLMTNIOWPZUK5FJBT1NISJDYXAZMWNXQIFZIGYDIHHEH'
-CLIENT_SECRET = '4RFUXZKCFZBCQQLZUM522PKCW4MHWHI1PUU25U2UNWBH0IKR'
-auth = {'client_id':CLIENT_ID, 'client_secret':CLIENT_SECRET}
+S_URL = 'https:\\/\\/api.foursquare.com\\/v2\\/'
+CLIENT_ID = 'GGXQB2N1DWH4MLUTV0HSNIR43DCIPUC30MGRQZ14DA0CBYFI'
+CLIENT_SECRET = 'YRIETS4LT5PO2GFLYLN53KLISFAWNQOBM1UNJYENRIQXZ2EM'
+OATH = 'HAFZXCLHXIL3YIMDTE1IY11USTU32E1YPSCI5ODMXQEDPH1Z'
+#auth = { 'oauth_token':'HAFZXCLHXIL3YIMDTE1IY11USTU32E1YPSCI5ODMXQEDPH1Z','v':20130922}
+auth = {'client_id':CLIENT_ID, 'client_secret':CLIENT_SECRET,'v':20130922}
 
 
 
 def local_info(local_id):
 	#Get info for a particular place.
-	r = requests.get(URL+'venues/' +local_id, params = auth)
+	r = requests.get(URL+'venues/' +str(local_id), params = auth)
 	data = r.json()['response']['venue']
 	name = data['name'].encode('utf-8')
 
@@ -32,26 +36,35 @@ def local_info(local_id):
 	except KeyError:
 		status = "Unknown"
 
-	#Get menu
 	r = requests.get(URL+'venues/' +local_id+'/menu', params = auth)
 	menu = r.json()['response']
 	return (name, rating, status, tips, menu)
 
 def phone_match(lat,lng,phone,name):
-	r_params = {'ll': str(lat)+","+str(lng),'radius':'10'}
+	r_params = {'ll': str(lat)+","+str(lng),'radius':'10', 'intent':'browse'}
 	r_params.update(auth)
+	
 	r = requests.get(URL+'venues/search', params = r_params)
-	shops = r.json()['response']['groups'][0]['items']
+	print name
+	shops = r.json()['response']['venues']
 	for shop in shops:
 		try:
 			fs_phone = shop['contact']['phone']
 			if phone==fs_phone:
 				print "match found"
-				return shop['id'].encode('utf-8')
+				return shop['id']
 		except KeyError:
 			continue
 	print "no match"
-	return "no_id"
+	return ("no_id",name, str(phone), str(lat), str(lng))
+
+def phoneRequest(lat,lng,phone,name):
+	r_params = {'ll': str(lat)+","+str(lng),'radius':'10', 'intent':'browse'}
+	r_params.update(auth)
+	toreturn = URL+'venues/search?'
+	for word in r_params.keys():
+		toreturn += word+'='+str(r_params[word]).replace(' ','')+'&'
+	return toreturn[:-1]
 
 def venue_match(info):
 	#Take a (latlng, name) and return a foursquare id
@@ -60,14 +73,15 @@ def venue_match(info):
 	q_param = ""
 	for word in name_bag:
 		q_param+= word+"%20"
-	r_params = {'ll': latlng,'radius':'100000','query':q_param.rstrip()}
+	r_params = {'ll': latlng,'radius':'1000','query':q_param.rstrip()}
 	r_params.update(auth)
-	r = requests.get(URL+'venues/search', params = r_params)
+	r = requests.get(URL+'venues/search', params = r_params, timeout=6)
 	shops = r.json()['response']['groups'][0]['items']
 	(data_id, score) = find_max_similarity(name_bag, shops)
 	return (data_id, score)
 
 def getTastyM(local_id):
+	print 'loading Classifier'
 	with open('tools/text_classifiers/mbclassif.pickle','r') as infile:
 		classif = pickle.load( infile )
 	(name, rating, status, reviews, menu) = local_info(local_id)
@@ -81,7 +95,7 @@ def getTastyM(local_id):
 		if found:
 			toreturn.append( menu_item )
 			r_reviews.append( (review, menu_item) )
-	return (toreturn ,r_reviews )
+	return (toreturn ,r_reviews, m_items )
 
 def match_item(review, menu_items):
 	text_w = eliminate_stop_words(nltk.word_tokenize(review))
@@ -144,11 +158,15 @@ def process_menu(menu):
 			for item in menus['entries']['items']:
 				try:
 					name = item['name'].encode('utf-8')
-					desc = item['description'].encode('utf-8')
 					price = item['price'].encode('utf-8')
 				except KeyError:
-					print "KeyError: "+item
+					print "KeyError"
+					pprint(item)
 					continue
+				try:
+					desc = item['description'].encode('utf-8')
+				except KeyError:
+					desc = " "
 				all_items.append( (name,desc,price) )						
 		return all_items
 	except KeyError:
