@@ -1,5 +1,6 @@
 from ..API_extract import foursquare as fs
 from util import hasher
+import pickle
 '''
 Foursquare related tables. Tasty dishes, local info, etc.
 TastyDishes originally was created for storing the best dishes
@@ -52,33 +53,39 @@ def populate_foursquare(cur):
 		FROM Coupons JOIN Additional ON Coupons.id=Additional.id")
 	coupons = cur.fetchall()
 	errors = ""
-	places, reviews, dishes, mItems =  [],[],[], []
+	places, reviews, mItems =  [],[],[]
 	for coupon in coupons:
 		( ids, name, title, value, discount, url, lat, lng, phone, yelp_r) = coupon
-		foursquare_id = fs.phone_match( lat, lng, phone, name)
+		foursquare_id = fs.phoneMatch( lat, lng, phone, name)
 		if foursquare_id[0] == "no_id":
 			errors += ','.join(foursquare_id) +'\n'
 			continue
-		( tasty_items, revs, m_items ) = fs.getTastyM( foursquare_id )		
-		for item in m_items:
-			itemKey = hasher( item ) #mysql INT limit
-			(iName, iDesc, iPrice) = item
-			mItems.append( [( itemKey, foursquare_id , iName, iPrice, iDesc)])
-		dishes.extend( [ ( hasher(dish) , foursquare_id, dish ) for dish in tasty_items ] )
-		reviews.extend( [ ( hasher(review[0]), foursquare_id, review[0], review[1] ) for review in revs ] )
+		( name, revs, menuItems ) = fs.localInfo( foursquare_id )		
+		for item in menuItems:
+			if (len(str(item))<2):
+				continue
+			itemKey = hasher( item ) 
+			try:
+				(iName, iDesc, iPrice) = item
+			except KeyError:
+				print item
+				continue
+			except ValueError:
+				print item
+				continue
+			mItems.append( ( itemKey, foursquare_id , iName, iPrice, iDesc) )
+		reviews.extend( [ ( hasher( (review,foursquare_id) ), foursquare_id, review, "unassigned " ) for review in revs if (len(review.strip())>0)] )
 		places.append( ( ids, foursquare_id, name, lat, lng, yelp_r ) )
-		with open('populate_foursquare.log','w') as outfile:
-			outfile.write(errors)
+	with open('populate_foursquare.log','w') as outfile:
+		outfile.write(errors)
 
-	cur.executemany('INSERT INTO Menus\
+	cur.executemany('INSERT IGNORE INTO Menus\
 		(itemId, restaurantId, itemName, itemPrice, itemDesc) \
 		VALUES (%s,%s,%s,%s,%s)',mItems)
 
-	cur.executemany( "INSERT INTO Tasties(itemId, restaurantId, mItem) \
-		VALUES (%s,%s,%s)", dishes )
-	cur.executemany( "INSERT INTO Reviews(reviewId, restaurantId, review, mItem) \
+	cur.executemany( "INSERT IGNORE INTO Reviews(reviewId, restaurantId, review, mItem) \
 		VALUES (%s,%s,%s,%s)", reviews )
-	cur.executemany( "INSERT INTO Restaurants(idCoupon, restaurantId, name, lat, lng, rating)\
+	cur.executemany( "INSERT IGNORE INTO Restaurants(idCoupon, restaurantId, name, lat, lng, rating)\
 															 VALUES (%s,%s,%s,%s,%s,%s)",places)
 def createRequestsFile(cur):
 	cur.execute("SELECT Coupons.id,name,title,value,discount,url,lat,lng,phone,yelp_r \
