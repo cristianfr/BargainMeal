@@ -1,6 +1,7 @@
 from ..utils.text import markerFormat
 import foursquare as fs
-import coupons as cp
+#import coupons as cp
+import hTester as tester
 import MySQLdb as db
 
 
@@ -62,11 +63,16 @@ def main():
 	#cp.create_additional(cur)
 	#cp.populate_additional(cur,'livingsocial')
 	#print 'Populated Additional .-.-.--.-.-.-.-.-.-.-.-.-.'
-	fs.create_foursquare(cur)
-	fs.populate_foursquare(cur)
-	print 'Populated Restaurants ..-.-.-....-..-.--.-.-.-.-.'
-	print 'Commiting changes .-.-.-.-.--.-.-.-.-.-.-.'
-	con.commit()
+	#fs.create_foursquare(cur)
+	#fs.populate_foursquare(cur)
+	#print 'Populated Restaurants ..-.-.-....-..-.--.-.-.-.-.'
+	cur.execute('SELECT restaurantId FROM Restaurants ORDER BY RAND() LIMIT 1')
+	restId = cur.fetchone()
+	assignations = tester.testRestaurant(restId[0],cur)
+	for assign in assignations:
+		print assign
+	#print 'Commiting changes .-.-.-.-.--.-.-.-.-.-.-.'
+	#con.commit()
 
 
 if __name__=='__main__':
