@@ -21,12 +21,13 @@ def addRatings():
 	#Add the ratings to the database.
 	con = db.connect_db()
 	cur = con.cursor()
-	cur.execute("SELECT id, phone FROM additional WHERE yelp_r=0 ")
+	cur.execute("SELECT id, phone FROM Additional WHERE yelp_r=0 ")
 	coupons = cur.fetchall()
 	for coupon in coupons:
 		(the_id, phone) = coupon
 		rating = getRating(phone)
-		cur.execute("UPDATE additional SET yelp_r = %s WHERE phone = %s"% (rating, phone))
+		print 'Found that id '+the_id+ ' has rating '+ str(rating)
+		cur.execute("UPDATE Additional SET yelp_r = %s WHERE phone = %s"% (rating, phone))
 	con.commit()
 	cur.close()
 	con.close()

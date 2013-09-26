@@ -63,25 +63,26 @@ def createMarkers(coupons, latlng):
 		markers= db.queryMarkers(cur)
 	#Query foursquare for info to create markers
 	for coupon in coupons:
-		(ids, name, title, value, discount, url,site) = coupon
-		try:
-			((foursquare_id, foursquare_name, lat, lng, phone),score) = fs.venue_match((latlng,name))
-		except ValueError:
-			print "Foursquare connection error."
-			continue
-		if score == 0:
-			continue
-		(tasty_items, revs ) = fs.getTastyM( foursquare_id )
-		try:
-			rating = yelp.getRating(phone)
-		except IndexError:
-			rating=0
-		counter = dict([(m_item , 0 ) for m_item in tasty_items])
-		for m_item in tasty_items:
-			counter[m_item] += 1
-		tastyLabel = [ (m_item, counter[m_item]) for m_item in tasty_items]
-		(m_label, m_revs) = markerFormat(name,value,discount, tastyLabel,revs)
-		markers.append( (lat,lng ,m_label, m_revs , ids, url,(rating-1)/4) ) 
+		#(ids, name, title, value, discount, url,site) = coupon
+		#try:
+		#	((foursquare_id, foursquare_name, lat, lng, phone),score) = fs.venue_match((latlng,name))
+		#except ValueError:
+		#	print "Foursquare connection error."
+		#	continue
+		#if score == 0:
+		#	continue
+		#(tasty_items, revs ) = fs.getTastyM( foursquare_id )
+		#try:
+		#	rating = yelp.getRating(phone)
+		#except IndexError:
+		#	rating=0
+		#counter = dict([(m_item , 0 ) for m_item in tasty_items])
+		#for m_item in tasty_items:
+		#	counter[m_item] += 1
+		#tastyLabel = [ (m_item, counter[m_item]) for m_item in tasty_items]
+		#(m_label, m_revs) = markerFormat(name,value,discount, tastyLabel,revs)
+		#markers.append( (lat,lng ,m_label, m_revs , ids, url,(rating-1)/4) ) 
+		pass
 	return markers
 
 

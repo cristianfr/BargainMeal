@@ -1,6 +1,8 @@
 from ..API_extract import foursquare as fs
+from random import randint
 from util import hasher
-import pickle
+from time import sleep
+
 '''
 Foursquare related tables. Tasty dishes, local info, etc.
 TastyDishes originally was created for storing the best dishes
@@ -31,13 +33,9 @@ def create_foursquare(cur):
 			reviewId INT, \
 			restaurantId VARCHAR(255) CHARACTER SET utf8, \
 			review TEXT CHARACTER SET utf8,\
-			mItem VARCHAR(255) CHARACTER SET utf8\
-			)")
-	cur.execute('DROP TABLE IF EXISTS Tasties')
-	cur.execute("CREATE TABLE Tasties( \
 			itemId INT,\
-			restaurantId VARCHAR(255) CHARACTER SET utf8, \
-			mItem VARCHAR(255) CHARACTER SET utf8)")
+			sentiment VARCHAR(3) CHARACTER SET utf8,\
+			PRIMARY KEY(reviewId))")
 	cur.execute('DROP TABLE IF EXISTS Menus')
 	cur.execute('CREATE TABLE Menus( \
 			itemId INT , \
@@ -46,6 +44,7 @@ def create_foursquare(cur):
 			itemPrice FLOAT, \
 			itemDesc TEXT, \
 			PRIMARY KEY(itemId) )')
+	print 'Foursquare databases reset.'
 
 	
 def populate_foursquare(cur):
@@ -56,10 +55,13 @@ def populate_foursquare(cur):
 	places, reviews, mItems =  [],[],[]
 	for coupon in coupons:
 		( ids, name, title, value, discount, url, lat, lng, phone, yelp_r) = coupon
+		print 'Preparing to phone match.'
+		sleep(randint(2,4))
 		foursquare_id = fs.phoneMatch( lat, lng, phone, name)
 		if foursquare_id[0] == "no_id":
 			errors += ','.join(foursquare_id) +'\n'
 			continue
+		sleep(randint(2,4))
 		( name, revs, menuItems ) = fs.localInfo( foursquare_id )		
 		for item in menuItems:
 			if (len(str(item))<2):
@@ -74,7 +76,7 @@ def populate_foursquare(cur):
 				print item
 				continue
 			mItems.append( ( itemKey, foursquare_id , iName, iPrice, iDesc) )
-		reviews.extend( [ ( hasher( (review,foursquare_id) ), foursquare_id, review, "unassigned " ) for review in revs if (len(review.strip())>0)] )
+		reviews.extend( [ ( hasher( (review,foursquare_id) ), foursquare_id, review, -1 , 'unk' ) for review in revs if (len(review.strip())>0)] )
 		places.append( ( ids, foursquare_id, name, lat, lng, yelp_r ) )
 	with open('populate_foursquare.log','w') as outfile:
 		outfile.write(errors)
@@ -83,8 +85,8 @@ def populate_foursquare(cur):
 		(itemId, restaurantId, itemName, itemPrice, itemDesc) \
 		VALUES (%s,%s,%s,%s,%s)',mItems)
 
-	cur.executemany( "INSERT IGNORE INTO Reviews(reviewId, restaurantId, review, mItem) \
-		VALUES (%s,%s,%s,%s)", reviews )
+	cur.executemany( "INSERT IGNORE INTO Reviews(reviewId, restaurantId, review, itemId, sentiment) \
+		VALUES (%s,%s,%s,%s,%s)", reviews )
 	cur.executemany( "INSERT IGNORE INTO Restaurants(idCoupon, restaurantId, name, lat, lng, rating)\
 															 VALUES (%s,%s,%s,%s,%s,%s)",places)
 def createRequestsFile(cur):

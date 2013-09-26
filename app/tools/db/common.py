@@ -1,8 +1,11 @@
+from ..text_classifiers.multinomialBayes import featx
 from ..utils.text import markerFormat
 import foursquare as fs
-#import coupons as cp
-import hTester as tester
+import coupons as cp
+import heuristic
 import MySQLdb as db
+import pickle
+
 
 
 '''
@@ -29,29 +32,57 @@ def db_setup():
 def queryMarkers(cur):
 	# Fetch the coupon/retaurant data cached in the database.
 	markers = []
-	cur.execute( "SELECT name, value, discount, url, restaurantId, lat, lng, id \
+	cur.execute( "SELECT Coupons.name, value, discount, url, restaurantId, lat, lng, id \
 		FROM Coupons JOIN Restaurants ON Coupons.id = Restaurants.idCoupon" )
 	coupons = cur.fetchall()
 	
 	for coupon in coupons:
 		( name, value, discount, url, id_foursquare, lat, lng, ids) = coupon
-		cur.execute( "SELECT mItem, count(mItem) FROM Tasties WHERE restaurantId = %s \
-		 GROUP BY mItem ORDER BY 2 DESC", ( id_foursquare, ) )
-		tasty_items = cur.fetchall()
 		
-		if tasty_items == ():
-			continue
-		if tasty_items[0][0].strip() == '':
-			continue
-		cur.execute( "SELECT review, mItem FROM Reviews WHERE restaurantId = %s", ( id_foursquare,) )
-		revs = cur.fetchall()
-		
-		cur.execute( "SELECT yelp_r FROM additional WHERE id = %s", ( ids, ) )
+		cur.execute( "SELECT itemName, itemPrice, review, counter.county FROM Reviews \
+		 JOIN Menus ON Menus.itemId = Reviews.itemId \
+		 JOIN \
+		 (SELECT itemId, count(itemId) as county FROM Reviews WHERE sentiment='pos' GROUP BY itemId ) as counter ON counter.itemId=Reviews.itemId\
+		 WHERE Reviews.restaurantId = %s AND \
+		 Reviews.sentiment='pos' \
+		 GROUP BY itemName,itemPrice,itemDesc, review ORDER BY counter.county DESC", ( id_foursquare, ) )
+		html_info = cur.fetchall()
+		tasty_items = []
+		revs = []
+		for item in html_info:
+			(iName, iPrice, rev, county) = item
+			strName = iName.replace('"','\\"')+" $"+str(iPrice)
+			toAppend = (strName, county)
+			if toAppend not in tasty_items:
+				tasty_items.append(toAppend)
+			revs.append( (rev.replace('"','\\"') , strName) )
+
+		cur.execute( "SELECT yelp_r FROM Additional WHERE id = %s", ( ids, ) )
 		rating = cur.fetchone()
 		
 		( m_label, m_revs ) = markerFormat( name, value, discount, tasty_items, revs)
 		markers.append( ( lat, lng , m_label, m_revs, ids, url, rating[0]*1.0/5 ) ) 
 	return markers
+
+def assign(cur):
+	cur.execute('SELECT restaurantId FROM Restaurants')
+	rIds = cur.fetchall()
+	for rId in rIds:
+		print rId
+		assignations = heuristic.itemAssign(rId,cur)
+		if (len(assignations)>0):
+			cur.executemany("UPDATE Reviews SET itemId ='%s' WHERE reviewId=%s",assignations)
+		print str(len(assignations)) +' values updated '
+
+def assignSentiment(cur):
+	#Assign sentiment given the classifier.
+	with open('tools/text_classifiers/mbclassif.pickle','r') as infile:
+		classif =  pickle.load(infile)
+	cur.execute("SELECT reviewId, review FROM Reviews WHERE sentiment='unk' ")
+	reviews = cur.fetchall()
+	classified_rev = [ ( classif.classify( featx( review[1] ) ), review[0]) for review in reviews]
+	cur.executemany('UPDATE Reviews SET sentiment=%s WHERE reviewId=%s', classified_rev)
+	
 
 def main():
 	con = connect_db()
@@ -59,20 +90,23 @@ def main():
 	print 'Connected to the database .-.-.--.-.-.-.-.-.-.-.-.-.'
 	#cp.create_coupons(cur)
 	#cp.populate_coupons(cur)
-	#print 'Populated Coupons .-.-.--.-.-.-.-.-.-.-.-.-.'
+	print 'Populated Coupons .-.-.--.-.-.-.-.-.-.-.-.-.'
 	#cp.create_additional(cur)
 	#cp.populate_additional(cur,'livingsocial')
-	#print 'Populated Additional .-.-.--.-.-.-.-.-.-.-.-.-.'
+	#cp.populate_additional(cur,'groupon')
+	print 'Populated Additional .-.-.--.-.-.-.-.-.-.-.-.-.'
 	#fs.create_foursquare(cur)
 	#fs.populate_foursquare(cur)
-	#print 'Populated Restaurants ..-.-.-....-..-.--.-.-.-.-.'
-	cur.execute('SELECT restaurantId FROM Restaurants ORDER BY RAND() LIMIT 1')
-	restId = cur.fetchone()
-	assignations = tester.testRestaurant(restId[0],cur)
-	for assign in assignations:
-		print assign
-	#print 'Commiting changes .-.-.-.-.--.-.-.-.-.-.-.'
-	#con.commit()
+	print 'Populated Restaurants ..-.-.-....-..-.--.-.-.-.-.'
+	assign(cur)
+	#assignSentiment(cur)
+	cur.execute('SELECT review, sentiment FROM Reviews')
+	reply = cur.fetchall()
+	for text in reply:
+		print text
+	print 'Commiting changes .-.-.-.-.--.-.-.-.-.-.-.'
+	con.commit()
+	con.close()
 
 
 if __name__=='__main__':
