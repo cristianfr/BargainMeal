@@ -1,8 +1,5 @@
-from tools.API_extract import foursquare as fs
 from tools.API_extract import groupon as gp
-from tools.utils.text import markerFormat
 from tools.db import geocodes as gc
-from tools.API_extract import yelp
 from tools.db import common as db
 from flask import *
 import sys
@@ -56,6 +53,7 @@ def code():
 def createMarkers(coupons, latlng):
 	#First version uses one location per item.
 	#Step one find the local_id in foursquare.
+	#Live version was too unstable for live demos.
 	con = db.connect_db()
 	#Query database for info.
 	with con:
